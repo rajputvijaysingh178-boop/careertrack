@@ -1,17 +1,12 @@
-﻿from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, DeclarativeBase
+"""OWNER: M1"""
+from sqlalchemy import create_engine
+from sqlalchemy.orm import declarative_base, sessionmaker
 from app.core.config import settings
 
-engine = create_engine(
-    settings.DATABASE_URL,
-    pool_pre_ping=True,
-    pool_recycle=300,
-)
+connect_args = {"check_same_thread": False} if settings.DATABASE_URL.startswith("sqlite") else {}
+engine = create_engine(settings.DATABASE_URL, connect_args=connect_args)
 SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False)
-
-
-class Base(DeclarativeBase):
-    pass
+Base = declarative_base()
 
 
 def get_db():
