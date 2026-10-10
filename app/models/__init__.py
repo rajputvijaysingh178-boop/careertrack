@@ -7,8 +7,9 @@ from app.models.user_skill import UserSkill  # noqa: F401
 from app.models.blog import Blog  # noqa: F401
 from app.models.material import Material  # noqa: F401
 from app.models.bookmark import Bookmark  # noqa: F401
-from app.models.application import Application  # noqa: F401
-from app.models.interview import Interview  # noqa: F401
+from app.models.application import Application, ApplicationStatusHistory  # noqa: F401
+from app.models.application_event import ApplicationEvent, HRCall  # noqa: F401
+from app.models.interview import Interview, InterviewStatusHistory  # noqa: F401
 from app.models.note import Note  # noqa: F401
 from app.models.reminder import Reminder  # noqa: F401
 from app.models.document import Document  # noqa: F401

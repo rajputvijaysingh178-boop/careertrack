@@ -10,6 +10,7 @@ from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
 from app.core.exceptions import NotFoundError
+from app.core.config import settings
 from app.models.material import Material
 from app.repositories.company_repository import CompanyRepository
 from app.repositories.job_repository import JobRepository
@@ -17,9 +18,9 @@ from app.repositories.material_repository import MaterialRepository
 from app.repositories.skill_repository import SkillRepository
 from app.schemas.material import MATERIAL_TYPES, MaterialCreate, MaterialUpdate
 
-UPLOAD_DIR = Path("uploads") / "materials"
+UPLOAD_DIR = Path(settings.MATERIAL_UPLOAD_DIR)
 ALLOWED_EXT = {".pdf", ".doc", ".docx", ".ppt", ".pptx", ".txt", ".md"}
-MAX_BYTES = 10 * 1024 * 1024
+MAX_BYTES = settings.MAX_MATERIAL_UPLOAD_BYTES
 
 
 class MaterialService:

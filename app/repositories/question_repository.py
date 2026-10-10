@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.models.interview_question import InterviewQuestion
 from app.models.user_interview_question import UserInterviewQuestion
+from app.models.application import Application
 
 
 class QuestionRepository:
@@ -79,6 +80,11 @@ class QuestionRepository:
         return self.db.query(Q).filter(or_(*conds)).limit(limit).all()
 
     # ------------------------------------------------ user's personal questions
+    def application_owned(self, user_id: int, application_id: int) -> bool:
+        return self.db.query(Application.id).filter(
+            Application.id == application_id, Application.user_id == user_id
+        ).first() is not None
+
     def get_user_question(self, user_id: int, question_id: int) -> Optional[UserInterviewQuestion]:
         U = UserInterviewQuestion
         return self.db.query(U).filter(U.id == question_id, U.user_id == user_id).first()

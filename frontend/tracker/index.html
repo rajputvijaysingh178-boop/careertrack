@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CareerTrack · Application tracker</title>
+  <link rel="stylesheet" href="/tracker/style.css">
+  <link rel="stylesheet" href="/tracker/extra.css">
+  <link rel="stylesheet" href="/tracker/admin.css">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="/tracker/">CareerTrack</a>
+    <nav><button data-view="jobs" class="nav">Jobs</button><button data-view="saved" class="nav">Saved</button><button data-view="board" class="nav active">Board</button><button data-view="list" class="nav">Applications</button><button data-view="prep" class="nav">Prepare</button><button data-view="jd" class="nav">JD Analyzer</button><button data-view="match" class="nav">Resume match</button><button data-view="recommendations" class="nav">For you</button><button data-view="analytics" class="nav">Analytics</button><button data-view="admin" id="admin-nav" class="nav hidden">Admin</button></nav>
+    <div class="user-area"><span id="user-name"></span><button id="logout" class="quiet hidden">Sign out</button></div>
+  </header>
+  <main>
+    <section id="login-view" class="login-card">
+      <div class="eyebrow">CAREERTRACK · YOUR NEXT MOVE</div>
+      <h1>Keep every opportunity moving.</h1>
+      <p>Sign in to review your applications, interviews, and follow-ups.</p>
+      <form id="login-form"><label>Email<input name="email" type="email" autocomplete="username" required></label><label>Password<input name="password" type="password" autocomplete="current-password" required></label><button class="primary">Sign in</button><div id="login-error" class="error"></div><button type="button" id="register-toggle" class="quiet">Create an account</button></form>
+      <form id="register-form" class="hidden"><label>Your name<input name="name" required maxlength="100"></label><label>Email<input name="email" type="email" required></label><label>Password<input name="password" type="password" required minlength="8"></label><label>Location<input name="location" maxlength="150"></label><button class="primary">Create account</button><button type="button" id="register-cancel" class="quiet">Back to sign in</button><div id="register-error" class="error"></div></form>
+    </section>
+    <section id="workspace" class="hidden">
+      <div class="heading"><div><div class="eyebrow">APPLICATION WORKSPACE</div><h1 id="page-title">Your board</h1><p id="page-subtitle">A clear view of what’s moving and what needs attention.</p></div><button id="add-application" class="primary">＋ Add application</button></div>
+      <div id="summary" class="summary"></div>
+      <div id="content"></div>
+    </section>
+  </main>
+  <dialog id="application-dialog"><form id="application-form" method="dialog"><div class="dialog-head"><div><div class="eyebrow">NEW OPPORTUNITY</div><h2>Add application</h2></div><button type="button" class="icon-button" id="close-dialog" aria-label="Close">×</button></div><label>Role title<input name="job_title" required maxlength="200" placeholder="Product Designer"></label><label>Company<input name="company_name" maxlength="200" placeholder="Company name"></label><label>Job description<textarea name="jd_text" rows="4" placeholder="Paste the description to save a snapshot"></textarea></label><div class="form-row"><label>Location<input name="location" placeholder="Remote"></label><label>Source<input name="source" placeholder="Company website"></label></div><label>Application URL<input name="application_url" type="url" placeholder="https://"></label><div id="form-error" class="error"></div><button class="primary">Save opportunity</button></form></dialog>
+  <aside id="detail" class="detail hidden" aria-live="polite"></aside>
+  <div id="toast" role="status" class="toast hidden"></div>
+  <script src="/tracker/app.js" defer></script>
+  <script src="/tracker/extra.js" defer></script>
+</body>
+</html>

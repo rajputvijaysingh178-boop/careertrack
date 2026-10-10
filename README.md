@@ -15,6 +15,24 @@ Open http://127.0.0.1:8000/docs  (every module has a `/ping` endpoint)
 
 Run tests: `pytest`
 
+## Frontend
+The job board, application tracker, M3 preparation tools, and admin workspace are
+served at `/tracker/`.
+
+## Environment and deployment
+See [DEPLOYMENT.md](DEPLOYMENT.md) for required and optional settings, Neon PostgreSQL
+configuration, CORS, file storage, AI configuration, and same-origin/split-host deployment notes.
+
+## Application tracker database upgrade
+Before using the M2 tracker APIs with an
+older database created from the original placeholder models, run
+`python -m scripts.migrate_m2_schema --apply` against a local SQLite copy first.
+The migration is additive and refuses non-empty placeholder tracker tables; it
+does not delete tables or records. Remote databases require the explicit
+`--allow-remote` flag after a backup and target review.
+Automatic schema creation is enabled by default only for SQLite. PostgreSQL deployments require an
+explicit reviewed schema upgrade before tracker APIs are used; app startup will not alter PostgreSQL.
+
 ## Ownership
 | Member | Scope |
 |---|---|

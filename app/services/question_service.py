@@ -44,6 +44,8 @@ class QuestionService:
 
     # ---------------------------------------------------------------- user's personal questions
     def create_user_question(self, user_id: int, data: UserQuestionCreate):
+        if data.application_id is not None and not self.repo.application_owned(user_id, data.application_id):
+            raise NotFoundError("Application")
         return self.repo.create_user_question(user_id=user_id, **data.model_dump())
 
     def get_user_question(self, user_id: int, question_id: int):
@@ -55,6 +57,10 @@ class QuestionService:
     def update_user_question(self, user_id: int, question_id: int, data: UserQuestionUpdate):
         obj = self.get_user_question(user_id, question_id)
         fields = data.model_dump(exclude_unset=True)
+        if fields.get("application_id") is not None and not self.repo.application_owned(
+            user_id, fields["application_id"]
+        ):
+            raise NotFoundError("Application")
         if fields.get("question") is None:
             fields.pop("question", None)
         return self.repo.update(obj, **fields)
