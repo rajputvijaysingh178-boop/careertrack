@@ -1,12 +1,30 @@
 """OWNER: M3 (Interview Prep & Intelligence)
-Table: interview_questions
-Columns to implement: id, company_id, job_id, skill_id, category, question, difficulty, experience_level, round, expected_topics, answer, created_by, created_at
+Table: interview_questions  (admin-managed question bank)
 """
-from sqlalchemy import Column, Integer
+from datetime import datetime
+
+from sqlalchemy import JSON, Column, DateTime, ForeignKey, Integer, String, Text
+
 from app.core.database import Base
 
 
 class InterviewQuestion(Base):
     __tablename__ = "interview_questions"
+
     id = Column(Integer, primary_key=True, index=True)
-    # TODO(M3): add remaining columns listed in the docstring
+
+    # Targeting: all optional, so one question can be generic or company/job/skill specific
+    company_id = Column(Integer, ForeignKey("companies.id"), nullable=True, index=True)
+    job_id = Column(Integer, ForeignKey("jobs.id"), nullable=True, index=True)
+    skill_id = Column(Integer, ForeignKey("skills.id"), nullable=True, index=True)
+
+    category = Column(String(100), nullable=False, index=True)         # Python, SQL, System Design ...
+    question = Column(Text, nullable=False)
+    difficulty = Column(String(20), nullable=False, default="MEDIUM")  # EASY / MEDIUM / HARD
+    experience_level = Column(String(30), nullable=True)               # "1-3 Years"
+    round = Column(String(50), nullable=True)                          # Technical 1, HR ...
+    expected_topics = Column(JSON, nullable=True)                      # ["Functions", "Closures"]
+    answer = Column(Text, nullable=True)                               # model answer
+
+    created_by = Column(Integer, ForeignKey("users.id"), nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)

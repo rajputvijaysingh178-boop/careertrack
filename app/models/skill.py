@@ -1,12 +1,22 @@
 """OWNER: M1 (Job Board & Admin)
-Table: skills
-Columns to implement: id, name, category  (+ job_skills: job_id, skill_id, importance REQUIRED/PREFERRED/OPTIONAL)
+Tables: skills, job_skills (many-to-many with importance REQUIRED / PREFERRED / OPTIONAL)
 """
-from sqlalchemy import Column, Integer
+from sqlalchemy import Column, ForeignKey, Integer, String
+
 from app.core.database import Base
 
 
 class Skill(Base):
     __tablename__ = "skills"
+
     id = Column(Integer, primary_key=True, index=True)
-    # TODO(M1): add remaining columns listed in the docstring
+    name = Column(String(100), unique=True, nullable=False, index=True)
+    category = Column(String(50), nullable=True, index=True)
+
+
+class JobSkill(Base):
+    __tablename__ = "job_skills"
+
+    job_id = Column(Integer, ForeignKey("jobs.id"), primary_key=True)
+    skill_id = Column(Integer, ForeignKey("skills.id"), primary_key=True)
+    importance = Column(String(10), nullable=False, default="REQUIRED")
