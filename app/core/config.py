@@ -111,11 +111,15 @@ class Settings(BaseSettings):
 
     @property
     def cors_list(self) -> list[str]:
-        return [
+        configured = [
             origin.strip().rstrip("/")
             for origin in self.CORS_ORIGINS.split(",")
             if origin.strip()
         ]
+        # Keep the supported local tracker dev-server origins available even
+        # when deployment-specific CORS_ORIGINS overrides the defaults.
+        local_frontends = ["http://localhost:8001", "http://127.0.0.1:8001"]
+        return list(dict.fromkeys([*configured, *local_frontends]))
 
 
 settings = Settings()

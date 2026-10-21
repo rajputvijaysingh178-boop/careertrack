@@ -26,8 +26,63 @@ TABLES = (
     "reminders",
 )
 
+REPAIR_COLUMNS = {
+    "applications": {
+        "user_id", "job_id", "company_id", "applied_date", "status", "source",
+        "application_url", "resume_version", "salary_expectation", "hr_name",
+        "hr_contact", "job_title", "company_name", "jd_text", "skills",
+        "requirements", "salary", "location", "created_at", "updated_at",
+    },
+    "bookmarks": {"user_id", "job_id", "type", "created_at"},
+    "documents": {"user_id", "application_id", "name", "file_url", "doc_type", "created_at"},
+    "interviews": {
+        "application_id", "round_name", "scheduled_at", "mode", "interviewer",
+        "meeting_link", "status", "feedback", "created_at", "updated_at",
+    },
+    "notes": {"user_id", "application_id", "title", "content", "created_at", "updated_at"},
+    "reminders": {
+        "user_id", "application_id", "title", "reminder_type", "reminder_time",
+        "status", "created_at",
+    },
+}
+
 
 def upgrade() -> None:
+    migration_context = op.get_context()
+    if migration_context.as_sql:
+        # This offline path starts from the checked-in initial revision, which
+        # already includes the complete M2 schema. The legacy repair requires
+        # live schema/data inspection and must be run online for a legacy DB.
+        op.execute("-- Complete initial schema already includes the e3 repair columns.")
+        return
+
+    inspector = sa.inspect(op.get_bind())
+    missing_tables = [table for table in TABLES if not inspector.has_table(table)]
+    if missing_tables:
+        raise RuntimeError(
+            "Schema repair tables are missing: " + ", ".join(missing_tables)
+        )
+
+    existing_columns = {
+        table: {column["name"] for column in inspector.get_columns(table)}
+        for table in TABLES
+    }
+    already_present = {
+        table: REPAIR_COLUMNS[table] & existing_columns[table]
+        for table in TABLES
+    }
+    missing_columns = {
+        table: REPAIR_COLUMNS[table] - existing_columns[table]
+        for table in TABLES
+    }
+    if not any(missing_columns.values()):
+        return
+    if any(already_present.values()):
+        raise RuntimeError(
+            "Schema repair columns are only partially present. Review the schema "
+            "before applying this revision."
+        )
+
     # Safety check: do not modify these tables if data has appeared.
     connection = op.get_bind()
 

@@ -82,27 +82,4 @@ $('#logout').onclick=()=>{localStorage.removeItem('careertrack_token');user=null
 document.querySelectorAll('.nav').forEach(b=>b.onclick=()=>{currentView=b.dataset.view;closeDetail();render()});
 $('#add-application').onclick=()=>$('#application-dialog').showModal();$('#close-dialog').onclick=()=>$('#application-dialog').close();
 $('#application-form').addEventListener('submit',async e=>{e.preventDefault();$('#form-error').textContent='';const v=Object.fromEntries(new FormData(e.target));try{await api('/applications',{method:'POST',body:JSON.stringify(v)});$('#application-dialog').close();e.target.reset();await load();toast('Application saved')}catch(err){$('#form-error').textContent=err.message}});
-$('#register-form').addEventListener('submit', async e => {
-  e.preventDefault();
-
-  const error = $('#register-error');
-  error.textContent = '';
-
-  const form = Object.fromEntries(new FormData(e.target));
-
-  try {
-    await api('/auth/register', {
-      method: 'POST',
-      body: JSON.stringify(form)
-    });
-
-    alert('Account created successfully. Please sign in.');
-
-    e.target.reset();
-    $('#register-form').classList.add('hidden');
-    $('#login-form').classList.remove('hidden');
-  } catch (err) {
-    error.textContent = err.message;
-  }
-});
 start();

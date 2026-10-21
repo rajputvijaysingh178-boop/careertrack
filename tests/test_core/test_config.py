@@ -9,7 +9,23 @@ def test_settings_accept_legacy_jwt_secret_and_normalize_neon_url():
                         JWT_SECRET="s" * 40, CORS_ORIGINS="https://app.example, https://admin.example/")
     assert settings.SECRET_KEY == "s" * 40
     assert settings.sqlalchemy_database_url.startswith("postgresql+psycopg://")
-    assert settings.cors_list == ["https://app.example", "https://admin.example"]
+    assert settings.cors_list == [
+        "https://app.example",
+        "https://admin.example",
+        "http://localhost:8001",
+        "http://127.0.0.1:8001",
+    ]
+
+
+def test_local_tracker_origins_remain_allowed_with_custom_cors_configuration():
+    settings = Settings(
+        _env_file=None,
+        DATABASE_URL="sqlite://",
+        SECRET_KEY="local-test-secret",
+        CORS_ORIGINS="https://app.example",
+    )
+    assert "http://localhost:8001" in settings.cors_list
+    assert "http://127.0.0.1:8001" in settings.cors_list
 
 
 def test_postgres_settings_reject_missing_or_short_jwt_secret():

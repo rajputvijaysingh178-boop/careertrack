@@ -16,6 +16,29 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
+    tables = {
+        "application_events",
+        "application_status_history",
+        "hr_calls",
+        "interview_status_history",
+    }
+    migration_context = op.get_context()
+    if migration_context.as_sql:
+        # The checked-in initial revision already creates these tables. Offline
+        # generation cannot inspect a database, so this repair is a no-op there.
+        op.execute("-- History tables are included in the initial schema revision.")
+        return
+
+    existing = set(sa.inspect(op.get_bind()).get_table_names())
+    present = tables & existing
+    if present == tables:
+        return
+    if present:
+        raise RuntimeError(
+            "History tables are only partially present; reconcile the schema "
+            "before applying this repair revision."
+        )
+
     op.create_table(
         "application_events",
         sa.Column("id", sa.Integer(), nullable=False),

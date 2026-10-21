@@ -24,7 +24,7 @@ class AuthService:
                                    phone=data.phone, location=data.location, role="USER", status="ACTIVE"))
 
     def login(self, email: str, password: str) -> dict:
-        user = self.users.get_by_email(email)
+        user = self.users.get_by_email(str(email).strip().lower())
         if not user or not verify_password(password, user.password_hash):
             raise HTTPException(401, "Incorrect email or password", headers={"WWW-Authenticate": "Bearer"})
         if user.status != "ACTIVE":

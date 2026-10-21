@@ -40,7 +40,7 @@ def test_public_registration_cannot_assign_admin_and_auth_rejects_blocked_users(
             assert registered.json()["status"] == "ACTIVE"
 
             login = client.post("/auth/login/json", json={
-                "email": "public-auth@example.com", "password": "public-account-password",
+                "email": "PUBLIC-AUTH@EXAMPLE.COM", "password": "public-account-password",
             })
             assert login.status_code == 200
             token = login.json()["access_token"]

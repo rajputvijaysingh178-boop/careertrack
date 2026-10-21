@@ -63,3 +63,13 @@ test('all frontend fetch calls go through the shared API URL and auth helper', (
   });
   assert.deepEqual(rawFetchFiles, []);
 });
+
+test('registration submit is wired to exactly one handler', () => {
+  const frontend = path.join(__dirname, '../../frontend/tracker');
+  const jsFiles = fs.readdirSync(frontend).filter(name => name.endsWith('.js'));
+  const registrations = jsFiles.flatMap(name => {
+    const source = fs.readFileSync(path.join(frontend, name), 'utf8');
+    return [...source.matchAll(/api\(['"]\/auth\/register['"]/g)].map(() => name);
+  });
+  assert.deepEqual(registrations, ['extra.js']);
+});
