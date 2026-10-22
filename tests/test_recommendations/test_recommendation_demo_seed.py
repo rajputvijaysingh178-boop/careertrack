@@ -79,3 +79,59 @@ def test_demo_seed_is_read_only_in_dry_run_and_idempotent_when_applied():
         db.close()
         Base.metadata.drop_all(engine)
         engine.dispose()
+
+
+def test_unknown_skill_submission_does_not_erase_existing_profile():
+    engine = create_engine("sqlite://", connect_args={"check_same_thread": False}, poolclass=StaticPool)
+    Base.metadata.create_all(engine)
+    db = sessionmaker(bind=engine, autoflush=False, autocommit=False)()
+    try:
+        user = User(name="Recommendation Profile Test", email="recommendation-profile@example.test",
+                    password_hash="test", role="USER", status="ACTIVE")
+        db.add(user)
+        db.commit()
+        seed_demo_jobs(db, apply=True)
+        service = RecommendationService(db)
+
+        first = service.set_my_skills(user.id, ["Python", "React"])
+        assert set(first["skills"]) == {"Python", "React"}
+
+        rejected = service.set_my_skills(user.id, ["Unlisted Specialty Skill"])
+        assert rejected["unknown"] == ["Unlisted Specialty Skill"]
+        assert set(rejected["skills"]) == {"Python", "React"}
+        assert set(service.my_skills(user.id)) == {"Python", "React"}
+
+        cleared = service.set_my_skills(user.id, [])
+        assert cleared == {"skills": [], "unknown": []}
+        assert service.my_skills(user.id) == []
+    finally:
+        db.close()
+        Base.metadata.drop_all(engine)
+        engine.dispose()
+
+
+def test_unavailable_skill_catalog_does_not_clear_profile(monkeypatch):
+    from fastapi import HTTPException
+    from app.repositories.prep_lookup_repository import PrepLookupRepository
+
+    engine = create_engine("sqlite://", connect_args={"check_same_thread": False}, poolclass=StaticPool)
+    Base.metadata.create_all(engine)
+    db = sessionmaker(bind=engine, autoflush=False, autocommit=False)()
+    try:
+        user = User(name="Catalog Failure Test", email="catalog-failure@example.test",
+                    password_hash="test", role="USER", status="ACTIVE")
+        db.add(user)
+        db.commit()
+        seed_demo_jobs(db, apply=True)
+        service = RecommendationService(db)
+        service.set_my_skills(user.id, ["Python"])
+
+        monkeypatch.setattr(PrepLookupRepository, "list_skills", lambda self: [])
+        with pytest.raises(HTTPException) as error:
+            service.set_my_skills(user.id, ["React"])
+        assert error.value.status_code == 503
+        assert service.my_skills(user.id) == ["Python"]
+    finally:
+        db.close()
+        Base.metadata.drop_all(engine)
+        engine.dispose()

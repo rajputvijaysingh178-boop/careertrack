@@ -1,9 +1,87 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
 const { renderAdminDashboard, renderAdminUsers, renderAdminReports, renderAdminCompanies, renderAdminJobs } = require('../../frontend/tracker/admin-ui.js');
 const { renderSkillManager, renderQuestionManager, renderMaterialManager, renderAdminBlogs } = require('../../frontend/tracker/admin-content.js');
+const { mergeCreatedApplication, submitApplicationAndRefresh } = require('../../frontend/tracker/application-workspace.js');
 
 const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+test('admin login opens the separate administration view and its job form uses the API client', () => {
+  const root = path.join(__dirname, '../../frontend/tracker');
+  const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+  const app = fs.readFileSync(path.join(root, 'app.js'), 'utf8');
+  const extra = fs.readFileSync(path.join(root, 'extra.js'), 'utf8');
+  const apiConfig = fs.readFileSync(path.join(root, 'api-config.js'), 'utf8');
+
+  assert.match(apiConfig, /CAREERTRACK_API_BASE_URL\s*=\s*'http:\/\/127\.0\.0\.1:8000'/);
+  assert.ok(html.indexOf('./api-config.js') < html.indexOf('./api-client.js'));
+  assert.ok(html.indexOf('./api-client.js') < html.indexOf('./app.js'));
+  assert.ok(html.indexOf('./app.js') < html.indexOf('./extra.js'));
+  assert.match(app, /currentView=user\.role==='ADMIN'\?'admin':'board'/);
+  assert.match(extra, /id="job-create"/);
+  assert.match(extra, /api\('\/jobs\/check-duplicate'/);
+  assert.match(extra, /api\('\/jobs'\s*,\s*\{method:'POST'/);
+  assert.match(extra, /api\(`\/jobs\/\$\{id\}\/publish/);
+  assert.match(extra, /if\(user\?\.role!==?'ADMIN'\)/);
+});
+
+test('admin application form requires an explicit owner and uses the admin assignment endpoint', () => {
+  const html = fs.readFileSync(path.join(__dirname, '../../frontend/tracker/index.html'), 'utf8');
+  const js = fs.readFileSync(path.join(__dirname, '../../frontend/tracker/app.js'), 'utf8');
+  const workspace = fs.readFileSync(path.join(__dirname, '../../frontend/tracker/application-workspace.js'), 'utf8');
+  assert.match(html, /id="application-owner-field"/);
+  assert.match(js, /role=USER&status=ACTIVE/);
+  assert.match(js, /submitApplicationAndRefresh/);
+  assert.match(workspace, /route = '\/admin\/applications'/);
+  assert.match(js, /Choose the user this application belongs to/);
+});
+
+test('two consecutive user saves append the committed response and refresh the owner list', async () => {
+  const persisted = [];
+  let visible = [];
+  const requests = [];
+  const api = async (route, options) => {
+    requests.push({route, options});
+    const payload = JSON.parse(options.body);
+    const created = {id: persisted.length + 1, user_id: 2, status: payload.status, ...payload};
+    persisted.push(created);
+    return created;
+  };
+  const refresh = async () => { visible = persisted.slice(); return true; };
+
+  for (const jobTitle of ['Backend Engineer', 'Data Engineer']) {
+    const result = await submitApplicationAndRefresh({
+      api,
+      payload: {job_title: jobTitle, status: 'APPLIED', user_id: 1},
+      isAdmin: false,
+      refresh,
+      onCreated: created => { visible = mergeCreatedApplication(visible, created); },
+    });
+    assert.equal(result.created.job_title, jobTitle);
+    assert.equal(result.refreshed, true);
+    assert.ok(visible.some(application => application.id === result.created.id));
+  }
+
+  assert.deepEqual(requests.map(request => request.route), ['/applications', '/applications']);
+  assert.ok(requests.every(request => !Object.hasOwn(JSON.parse(request.options.body), 'user_id')));
+  assert.equal(persisted.length, 2);
+  assert.deepEqual(new Set(visible.map(application => application.id)), new Set([1, 2]));
+});
+
+test('a saved response remains visible when the subsequent list refresh fails', async () => {
+  let visible = [];
+  const result = await submitApplicationAndRefresh({
+    api: async () => ({id: 9, user_id: 2, job_title: 'Saved before refresh'}),
+    payload: {job_title: 'Saved before refresh'},
+    isAdmin: false,
+    refresh: async () => false,
+    onCreated: created => { visible = mergeCreatedApplication(visible, created); },
+  });
+  assert.equal(result.refreshed, false);
+  assert.equal(visible[0].id, 9);
+});
 
 test('admin dashboard renders nested statistics and platform counts', () => {
   const html = renderAdminDashboard({ users: { total: 8, admins: 1, blocked: 2 }, jobs: { total: 5, active: 3 }, companies: 4, applications: 9, interviews_tracked: 2, offers_recorded: 1, interview_questions: 7, materials: 6, blogs: { total: 3, published: 2 } }, esc);

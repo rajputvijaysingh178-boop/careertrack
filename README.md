@@ -22,6 +22,19 @@ both features use their rule-based behavior. Run the backend with `uvicorn app.m
 
 Run tests: `pytest`
 
+## Local test database
+The isolated test-data seeder writes to `careertrack/.testdata/careertrack-seed.db`:
+
+```powershell
+python -m scripts.seed_local_test_data
+$env:CAREERTRACK_LOCAL_TEST_MODE = 'true'
+python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
+```
+
+Start the backend from the `careertrack` directory. Local-test mode pins the backend
+to that SQLite file, disables the scheduler and automatic schema creation, and ignores
+other configured database URLs for the process. It does not change `.env`.
+
 ## Frontend
 The job board, application tracker, M3 preparation tools, and admin workspace are
 served at `/tracker/`.

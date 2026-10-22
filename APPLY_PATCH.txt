@@ -1,0 +1,20 @@
+CareerTrack targeted recommendations fix
+
+APPLY SAFELY
+1. Make a backup/commit of your current local changes first if you normally use Git. Do not reset or discard anything.
+2. Extract this ZIP into the EXISTING CareerTrack project root, preserving folder structure, and allow these three files to be replaced.
+3. This patch does not include or modify .env, the database, Git history, virtual environments, or other project files.
+
+CHANGES
+- A submitted skill profile is no longer erased if every submitted skill is unknown to the master catalog. Explicitly submitting an empty list still clears the profile.
+- If the skill catalog is empty or unavailable, the API returns HTTP 503 and does not change the saved profile.
+- The recommendations UI keeps submitted text visible and explains that unknown skills must be added in Admin -> Skills.
+- Empty recommendations now explain that applied/ignored jobs are excluded and that jobs need linked skills.
+- Added regression tests for unknown skills, unavailable catalog, and explicit profile clearing.
+
+VALIDATION AGAINST THIS COPY
+- Python compileall: passed.
+- Focused recommendation/prep tests: 15 passed, 9 SQLAlchemy datetime deprecation warnings.
+- Frontend Node tests: 31 passed.
+- Full Python suite could not be collected in this review environment because bcrypt, python-jose, APScheduler, and psycopg are missing and package downloads are unavailable. Run the full suite in your project's venv before release.
+- No live Neon database was accessed, and no deployment was performed.

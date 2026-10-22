@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import pytest
 from pydantic import ValidationError
 
@@ -40,6 +42,20 @@ def test_sqlite_development_settings_keep_local_default():
     settings = Settings(_env_file=None, DATABASE_URL="sqlite://", SECRET_KEY="local-test-secret")
     assert settings.sqlalchemy_database_url == "sqlite://"
     assert settings.should_auto_create_schema is True
+
+
+def test_local_test_mode_pins_seed_database_and_disables_startup_side_effects():
+    settings = Settings(
+        _env_file=None,
+        DATABASE_URL="postgresql://must-not-connect.invalid/careertrack",
+        CAREERTRACK_LOCAL_TEST_MODE=True,
+        ENABLE_SCHEDULER=True,
+        AUTO_CREATE_SCHEMA=True,
+    )
+    expected_path = Path(__file__).resolve().parents[2] / ".testdata" / "careertrack-seed.db"
+    assert settings.DATABASE_URL == f"sqlite:///{expected_path.as_posix()}"
+    assert settings.should_auto_create_schema is False
+    assert settings.ENABLE_SCHEDULER is False
 
 
 def test_postgres_startup_does_not_implicitly_change_schema():

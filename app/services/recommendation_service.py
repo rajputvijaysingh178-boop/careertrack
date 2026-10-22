@@ -6,6 +6,7 @@ Responsibility: rule-based recommendations (tags / skills matching).
 """
 from typing import Optional
 
+from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
 from app.ai.matching import match_skills
@@ -26,7 +27,18 @@ class RecommendationService:
         return self.lookup.skill_names_by_ids(self.profile.skill_ids(user_id))
 
     def set_my_skills(self, user_id: int, names: list) -> dict:
-        table = {canonical_key(r["name"]): r for r in self.lookup.list_skills() if r.get("name")}
+        catalog_rows = self.lookup.list_skills()
+        submitted_names = [raw for raw in names if raw and raw.strip()]
+        if submitted_names and not catalog_rows:
+            # The lookup repository intentionally degrades query failures to empty
+            # lists for optional prep content. A profile write must not interpret a
+            # failed/empty catalog lookup as permission to erase a user's skills.
+            raise HTTPException(
+                status_code=503,
+                detail="The skill catalog is empty or unavailable; no profile changes were made. "
+                       "Check the skill catalog and server logs, then try again.",
+            )
+        table = {canonical_key(r["name"]): r for r in catalog_rows if r.get("name")}
         ids, saved, unknown = [], [], []
         for raw in names:
             row = table.get(canonical_key(raw))
@@ -36,6 +48,13 @@ class RecommendationService:
                     saved.append(row["name"])
             elif raw and raw.strip():
                 unknown.append(raw.strip())
+        # Do not erase a working profile when every submitted name is unknown.
+        # This can happen when the browser's skill catalog is stale or the user
+        # types a skill that an admin has not added yet. An explicit empty list
+        # still clears the profile, preserving the replace semantics.
+        if submitted_names and not ids:
+            return {"skills": self.my_skills(user_id), "unknown": unknown}
+
         self.profile.replace(user_id, ids)
         return {"skills": saved, "unknown": unknown}      # unknown = not in the skills table (ask admin to add)
 
@@ -68,7 +87,13 @@ class RecommendationService:
                                 "matched": [x["name"] for x in m["matched"]],
                                 "missing": [x["name"] for x in m["missing"]]})
         results.sort(key=lambda r: (-r["match_percent"], r["job_id"]))
-        return {"skills": mine, "jobs": results[:limit]}
+        payload = {"skills": mine, "jobs": results[:limit]}
+        if not results:
+            payload["note"] = (
+                "No new matching jobs found. Recommendations exclude jobs you have already applied to "
+                "or ignored, and only jobs with linked skills can be matched."
+            )
+        return payload
 
     # ---------------------------------------------------------------- related content for a job
     def content_for_job(self, job_id: int, user=None) -> dict:

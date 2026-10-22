@@ -29,7 +29,9 @@ class PrepPlanService:
         known = self.lookup.skill_names_by_ids(self.profile.skill_ids(user.id))
 
         plan, source, ai_error = None, "rules", None
+        print("PREP AI CHECK:", use_ai, "skills:", len(skills))
         if use_ai and skills:
+            print("PREP AI DEBUG:", use_ai, "skills:", len(skills))
             try:
                 plan = self._ai_plan(skills, days, target["role_title"])
                 source = "ai"
@@ -42,7 +44,9 @@ class PrepPlanService:
         out = {"role": target["role_title"], "days": len(plan), "source": source, "skills": skills, "plan": plan}
         if ai_error:
             out["ai_error"] = ai_error
+        print("PREP RESULT:", out.get("source"), out.get("ai_error"))
         return out
+    
 
     # ------------------------------------------------------------------
     @staticmethod

@@ -33,6 +33,11 @@ class ApplicationCreate(BaseModel):
         return self
 
 
+class AdminApplicationCreate(ApplicationCreate):
+    """An administrator may create an application for one explicit active user."""
+    user_id: int = Field(gt=0)
+
+
 class ApplicationUpdate(BaseModel):
     job_title: Optional[str] = Field(default=None, max_length=200)
     company_name: Optional[str] = Field(default=None, max_length=200)

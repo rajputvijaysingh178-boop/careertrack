@@ -13,6 +13,7 @@ DEFAULT_MODEL = "gemini-3.8-flash"
 API_URL = "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
 MAX_RETRIES = 2
 RETRY_BACKOFF_SECONDS = 0.2
+REQUEST_TIMEOUT_SECONDS = 90
 
 
 class LLMUnavailable(Exception):
@@ -26,7 +27,7 @@ def is_enabled() -> bool:
 def complete(
     prompt: str,
     system: str = "",
-    max_tokens: int = 1500,
+    max_tokens: int = 3000,
 ) -> str:
     if not is_enabled():
         raise LLMUnavailable("LLM_API_KEY is not set")
@@ -61,7 +62,7 @@ def complete(
                     "Content-Type": "application/json",
                 },
                 json=payload,
-                timeout=60,
+                timeout=REQUEST_TIMEOUT_SECONDS,
             )
             response.raise_for_status()
             break
@@ -134,7 +135,7 @@ def complete(
 def complete_json(
     prompt: str,
     system: str = "",
-    max_tokens: int = 1500,
+    max_tokens: int = 3000,
 ) -> dict:
     raw = complete(prompt, system, max_tokens)
     raw = raw.strip()

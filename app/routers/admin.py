@@ -1,17 +1,33 @@
 """OWNER: M1 - admin dashboard, reports and user management (ADMIN only)"""
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.core.dependencies import require_admin
 from app.schemas.user import AdminUserCreate, RoleChange, StatusChangeUser, UserOut
+from app.schemas.application import AdminApplicationCreate, ApplicationCreate, ApplicationOut
+from app.models.user import User
+from app.services.application_service import ApplicationService
 from app.services.admin_service import AdminService
 from app.services.job_service import JobService
 from app.services.user_service import UserService
 
 router = APIRouter(prefix="/admin", tags=["admin"])
+
+
+@router.post("/applications", response_model=ApplicationOut, status_code=201)
+def create_application_for_user(data: AdminApplicationCreate, db: Session = Depends(get_db),
+                                admin=Depends(require_admin)):
+    """Create a private application explicitly assigned to one active USER account."""
+    target = db.get(User, data.user_id)
+    if not target:
+        raise HTTPException(status_code=404, detail="User not found")
+    if target.role != "USER" or target.status != "ACTIVE":
+        raise HTTPException(status_code=400, detail="Applications can only be assigned to active USER accounts")
+    application_data = ApplicationCreate.model_validate(data.model_dump(exclude={"user_id"}))
+    return ApplicationService(db).create(target.id, application_data)
 
 
 @router.get("/ping")

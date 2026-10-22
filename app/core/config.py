@@ -1,5 +1,7 @@
 
 """OWNER: M1 - environment settings (read from .env)"""
+from pathlib import Path
+
 from pydantic import AliasChoices, Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -38,15 +40,25 @@ class Settings(BaseSettings):
 
     LLM_API_KEY: str = ""
     LLM_MODEL: str = ""
+    CAREERTRACK_LOCAL_TEST_MODE: bool = False
 
     model_config = SettingsConfigDict(
-         env_file="../.env",
-         extra="ignore",
-         populate_by_name=True,
-    )
+    env_file=Path(__file__).resolve().parents[3] / ".env",
+    extra="ignore",
+    populate_by_name=True,
+)
 
     @model_validator(mode="after")
     def require_secure_postgres_secret(self):
+        if self.CAREERTRACK_LOCAL_TEST_MODE:
+            # Pin local verification to the isolated seeder DB even if a
+            # process variable or .env currently names a remote database.
+            seed_db = Path(__file__).resolve().parents[2] / ".testdata" / "careertrack-seed.db"
+            self.DATABASE_URL = f"sqlite:///{seed_db.as_posix()}"
+            self.ENABLE_SCHEDULER = False
+            self.AUTO_CREATE_SCHEMA = False
+            return self
+
         postgres = self.DATABASE_URL.startswith(
             ("postgres://", "postgresql://", "postgresql+")
         )

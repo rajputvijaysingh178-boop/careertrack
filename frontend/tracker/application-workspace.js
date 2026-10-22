@@ -7,6 +7,27 @@ const APPLICATION_REMINDER_TYPES = [
   ['DOCUMENT_SUBMISSION', 'Document Submission'],
 ];
 
+function mergeCreatedApplication(applications, created) {
+  return [created, ...(applications || []).filter(application => application.id !== created.id)];
+}
+
+async function submitApplicationAndRefresh({api, payload, isAdmin, refresh, onCreated}) {
+  const body = {...payload};
+  let route = '/applications';
+  if (isAdmin) {
+    route = '/admin/applications';
+    body.user_id = Number(body.user_id);
+  } else {
+    // Ownership for a regular user always comes from the authenticated token.
+    delete body.user_id;
+  }
+  const created = await api(route, {method: 'POST', body: JSON.stringify(body)});
+  if (!isAdmin) onCreated?.(created);
+  let refreshed = false;
+  try { refreshed = Boolean(await refresh()); } catch { refreshed = false; }
+  return {created, refreshed};
+}
+
 function renderReminderTypeOptions(selected = 'FOLLOW_UP', escapeHtml = value => String(value)) {
   return APPLICATION_REMINDER_TYPES.map(([value, label]) => `<option value="${escapeHtml(value)}" ${selected === value ? 'selected' : ''}>${escapeHtml(label)}</option>`).join('');
 }
@@ -30,6 +51,8 @@ function renderApplicationPrepResources(workspace, skillGap, escapeHtml) {
 
 if (typeof module !== 'undefined' && module.exports) module.exports = {
   APPLICATION_REMINDER_TYPES,
+  mergeCreatedApplication,
+  submitApplicationAndRefresh,
   renderReminderTypeOptions,
   renderDocumentReference,
   renderApplicationPrepResources,

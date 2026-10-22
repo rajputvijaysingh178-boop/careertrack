@@ -55,6 +55,7 @@ def resolve_target(db: Session, user, job_id: Optional[int] = None, application_
     if not skills and source_text:
         skills = [{"name": item["name"], "importance": item["importance"]}
                   for item in analyze_jd(source_text, lookup.skill_names())["skills"]]
+        print("TARGET DEBUG:", repr(source_text[:150]), "known skills:", len(lookup.skill_names()), "extracted:", len(skills))
 
     display_job = job
     if not display_job and resolved_title:
